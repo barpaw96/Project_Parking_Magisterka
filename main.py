@@ -39,7 +39,7 @@ while True:
         from pytesseract import image_to_string
         odczyt_tablicy_activ = image_to_string(thresh, lang='eng', config='--psm 9')
 
-        if odczyt_tablicy_activ[0] or odczyt_tablicy_activ[3] == 32:
+        if odczyt_tablicy_activ[2] == " " or odczyt_tablicy_activ[3] == " ":
             tablica_edyt_active = re.sub("[^A-Z0-9]", "", tablica_edyt_active)
             sql_tablice_active = "SELECT id, name, idcolor_car, number_plates FROM users WHERE number_plates = %s"
 
@@ -72,7 +72,7 @@ cv2.destroyAllWindows()
 
 while True:
 
-    foto = cv2.imread('TEST15.jpg')
+    foto = cv2.imread('TEST25.jpg')
     foto = cv2.cvtColor(foto, cv2.COLOR_BGR2RGB)
     tablice_rej_static = tablica_casade.detectMultiScale(foto)
     for (x, y, w, h) in tablice_rej_static:
@@ -87,15 +87,43 @@ while True:
     from pytesseract import image_to_string
     odczyt_tabicy = image_to_string(thresh, lang='eng', config='--psm 9')
 
+    read_tablic_error = odczyt_tabicy
+    read_tablic_error_sql = read_tablic_error.replace(" ", "%")
     odczyt_tabicy = odczyt_tabicy.lstrip()
+    sprawdzenie_tablicy_w_zanki_puste = 0
+    dlugosc_iteracji = len(read_tablic_error) - 1
+    if read_tablic_error[2] == " " and read_tablic_error[3] == range(0,9):
+
+        for i in range(0,dlugosc_iteracji):
+            if i == 2:
+                i +=1
+            elif read_tablic_error[i] == " ":
+                sprawdzenie_tablicy_w_zanki_puste = 1
+    elif read_tablic_error[3] == " ":
+        for i in range(0,dlugosc_iteracji):
+            if i == 3:
+                i +=1
+            elif read_tablic_error[i] == " ":
+                sprawdzenie_tablicy_w_zanki_puste = 1
+
+#    print(sprawdzenie_tablicy_w_zanki_puste)
+
+#    print(read_tablic_error)
+#    print(read_tablic_error_sql)
+
     tablica_edyt_static = odczyt_tabicy.rstrip()
 
-    print(odczyt_tabicy)
 
 
-    if tablica_edyt_static[2] or tablica_edyt_static[3] == 32:
+
+#    print(odczyt_tabicy)
+#    print(len(odczyt_tabicy))
+
+
+    if tablica_edyt_static[2] == " " or tablica_edyt_static[3] == " ":
         tablica_edyt_static = re.sub("[^A-Z0-9]", "", tablica_edyt_static)
-
+        print(tablica_edyt_static)
+        print(len(tablica_edyt_static))
         sql_tablice_static = "SELECT id, name, idcolor_car, number_plates FROM users WHERE number_plates = %s"
         cursor = connection.cursor()
         cursor.execute(sql_tablice_static, (tablica_edyt_static,))
@@ -128,11 +156,7 @@ while True:
 
             sql_tablice_niepelne = sql_tablice_niepelne14
 
-
-
-            print(sql_tablice_niepelne)
-
-
+#            print(sql_tablice_niepelne)
 
 #            plt.imshow(thresh)
 #            plt.show()
@@ -145,7 +169,6 @@ while True:
             cut_y = (yheight - height) / 2 # trzeba zamienić na liczbę całkowitą
 
             px = cut_color[90,240]
-
 
             if px[0] >= 250 and px[1] <= 5 and px[2] <= 5:
                 print('czerwony')
@@ -221,16 +244,21 @@ while True:
 #            plt.imshow(foto3)
 #            plt.show()
 
-            print(VW)
-            print(AD)
-            print(HY)
-            print(TY)
-            print(REN)
+#            print(VW)
+#            print(AD)
+#            print(HY)
+#            print(TY)
+#            print(REN)
             lenrowtabHY = 0
             lenrowtabTY = 0
             lenrowtabREN = 0
             lenrowtabVW = 0
             lenrowtabAD = 0
+            lenrowtaberrorHY = 0
+            lenrowtaberrorTY = 0
+            lenrowtaberrorREN = 0
+            lenrowtaberrorVW = 0
+            lenrowtaberrorAD = 0
             lenrowHY = 0
             lenrowTY = 0
             lenrowREN = 0
@@ -239,76 +267,34 @@ while True:
 
             if VW == "Volkswagen":
                 sql_VW = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                         "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
                 cursor = connection.cursor()
-                cursor.execute(sql_VW, (VW,read_color,sql_tablice_niepelne))
-                for rowtabVW in cursor:
-                    print(rowtabVW)
-                    lenrowtabVW = rowtabVW[0]
-
-            if AD == "Audi":
-                sql_AD = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
-                cursor = connection.cursor()
-                cursor.execute(sql_AD, (AD,read_color, sql_tablice_niepelne))
-                for rowtabAD in cursor:
-                    print(rowtabAD)
-                    lenrowtabAD = rowtabAD[0]
-            if TY == "Toyota":
-                sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
-                cursor = connection.cursor()
-                cursor.execute(sql_TY, (TY,read_color, sql_tablice_niepelne))
-                for rowtabTY in cursor:
-                    print(rowtabTY)
-                    lenrowtabTY = rowtabTY[0]
-            if HY == "Hyundai":
-                sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
-                cursor = connection.cursor()
-                cursor.execute(sql_TY, (TY,read_color, sql_tablice_niepelne))
-                for rowtabHY in cursor:
-                    print(rowtabHY)
-                    lenrowtabHY = rowtabHY[0]
-            if REN == "Renault":
-                sql_REN = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
-                cursor = connection.cursor()
-                cursor.execute(sql_REN, (REN,read_color, sql_tablice_niepelne))
-                for rowtabREN in cursor:
-                    print(rowtabREN)
-                    lenrowtabREN = rowtabREN[0]
-
-            if VW == "Volkswagen":
-                sql_VW = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
-                cursor = connection.cursor()
-                cursor.execute(sql_VW, (VW,read_color))
+                cursor.execute(sql_VW, (VW, read_color))
                 for rowVW in cursor:
                     print(rowVW)
                     lenrowVW = rowVW[0]
 
             if AD == "Audi":
                 sql_AD = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
+                         "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
                 cursor = connection.cursor()
-                cursor.execute(sql_AD, (AD,read_color))
+                cursor.execute(sql_AD, (AD, read_color))
                 for rowAD in cursor:
                     print(rowAD)
                     lenrowAD = rowAD[0]
             if TY == "Toyota":
                 sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s "
+                         "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s "
                 cursor = connection.cursor()
-                cursor.execute(sql_TY, (TY,read_color))
+                cursor.execute(sql_TY, (TY, read_color))
                 for rowTY in cursor:
                     print(rowTY)
                     lenrowTY = rowTY[0]
             if HY == "Hyundai":
-                sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
-                          "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
+                sql_HY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                         "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s"
                 cursor = connection.cursor()
-                cursor.execute(sql_TY, (TY,read_color))
+                cursor.execute(sql_HY, (HY, read_color))
                 for rowHY in cursor:
                     print(rowHY)
                     lenrowHY = rowHY[0]
@@ -316,37 +302,153 @@ while True:
                 sql_REN = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
                           "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s "
                 cursor = connection.cursor()
-                cursor.execute(sql_REN, (REN,read_color))
+                cursor.execute(sql_REN, (REN, read_color))
                 for rowREN in cursor:
                     print(rowREN)
                     lenrowREN = rowREN[0]
 
 
-            lentabend = lenrowtabREN + lenrowtabHY + lenrowtabAD + lenrowtabTY + lenrowtabVW
-            lenend = lenrowREN + lenrowHY + lenrowTY + lenrowAD + lenrowVW
+            if len(tablica_edyt_static) == 7 or len(tablica_edyt_static)==8:
+                if VW == "Volkswagen":
+                    sql_VW = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_VW, (VW,read_color,sql_tablice_niepelne))
+                    for rowtabVW in cursor:
+                        print(rowtabVW)
+                        lenrowtabVW = rowtabVW[0]
 
-            if lentabend == 0:
-                szansa_trafien_not_tab = (1 / lenend) * 100
-                print(odczyt_tabicy)
-                print("Użytkonik nie zajerstrowany! \n Należy skorzystaćc z parkometru", \
-                      "Możesz być 1 z: ", lenend)
-                break
-            elif lentabend > 0:
-                szansa_trafienia = (lentabend / lenend) * 100
-                if szansa_trafienia < 80:
-                    print(odczyt_tabicy)
-                    print("Należy skorzystać z parkometru.")
+                if AD == "Audi":
+                    sql_AD = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_AD, (AD,read_color, sql_tablice_niepelne))
+                    for rowtabAD in cursor:
+                        print(rowtabAD)
+                        lenrowtabAD = rowtabAD[0]
+                if TY == "Toyota":
+                    sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_TY, (TY,read_color, sql_tablice_niepelne))
+                    for rowtabTY in cursor:
+                        print(rowtabTY)
+                        lenrowtabTY = rowtabTY[0]
+                if HY == "Hyundai":
+                    sql_HY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_HY, (HY,read_color, sql_tablice_niepelne))
+                    for rowtabHY in cursor:
+                        print(rowtabHY)
+                        lenrowtabHY = rowtabHY[0]
+                if REN == "Renault":
+                    sql_REN = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_REN, (REN,read_color, sql_tablice_niepelne))
+                    for rowtabREN in cursor:
+                        print(rowtabREN)
+                        lenrowtabREN = rowtabREN[0]
 
-                    break
-                elif szansa_trafienia > 80   and szansa_trafienia < 90:
+                lentabend = lenrowtabREN + lenrowtabHY + lenrowtabAD + lenrowtabTY + lenrowtabVW
+                lenend = lenrowREN + lenrowHY + lenrowTY + lenrowAD + lenrowVW
+
+                if lentabend == 0:
+                    szansa_trafien_not_tab = (1 / lenend) * 100
                     print(odczyt_tabicy)
-                    print("Pprawdopodobnie jesteś naszym klinetem")
-                    print("Zaleca się skorzystać z parkometru")
+                    print("Użytkonik nie zajerstrowany! \n Należy skorzystaćc z parkometru", \
+                          "Możesz być 1 z: ", lenend)
                     break
-                else:
+                elif lentabend > 0:
+                    szansa_trafienia = (lentabend / lenend) * 100
+                    if szansa_trafienia < 80:
+                        print(odczyt_tabicy)
+                        print("Należy skorzystać z parkometru.")
+
+                        break
+                    elif szansa_trafienia > 80   and szansa_trafienia < 90:
+                        print(odczyt_tabicy)
+                        print("Pprawdopodobnie jesteś naszym klinetem")
+                        print("Zaleca się skorzystać z parkometru")
+                        break
+                    else:
+                        print(odczyt_tabicy)
+                        print("Dziękujemy za skorzystanie z naszych  usług")
+                        break
+
+
+            elif len(tablica_edyt_static) != 7 or len(tablica_edyt_static) !=8 or sprawdzenie_tablicy_w_zanki_puste == 1:
+
+                if VW == "Volkswagen":
+                    sql_VW = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                             "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_VW, (VW, read_color, read_tablic_error_sql))
+                    for rowtabVW in cursor:
+                        print(rowtabVW)
+                        lenrowtaberrorVW = rowtabVW[0]
+
+                if AD == "Audi":
+                    sql_AD = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                             "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_AD, (AD, read_color, read_tablic_error_sql))
+                    for rowtabAD in cursor:
+                        print(rowtabAD)
+                        lenrowtaberrorAD = rowtabAD[0]
+                if TY == "Toyota":
+                    sql_TY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                             "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_TY, (TY, read_color, read_tablic_error_sql))
+                    for rowtabTY in cursor:
+                        print(rowtabTY)
+                        lenrowtaberrorTY = rowtabTY[0]
+                if HY == "Hyundai":
+                    sql_HY = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                             "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_HY, (HY, read_color, read_tablic_error_sql))
+                    for rowtabHY in cursor:
+                        print(rowtabHY)
+                        lenrowtaberrorHY = rowtabHY[0]
+                if REN == "Renault":
+                    sql_REN = "SELECT row_number() over (order by id), name, idcolor_car, idvehicle_brand, number_plates " \
+                              "FROM users WHERE idvehicle_brand = %s AND idcolor_car =%s AND number_plates like %s"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_REN, (REN, read_color, read_tablic_error_sql))
+                    for rowtabREN in cursor:
+                        print(rowtabREN)
+                        lenrowtaberrorREN = rowtabREN[0]
+                lentaberrorend = lenrowtaberrorREN + lenrowtaberrorTY + lenrowtaberrorVW + lenrowtaberrorAD + lenrowtaberrorHY
+                lenend = lenrowREN + lenrowHY + lenrowTY + lenrowAD + lenrowVW
+
+                if lentaberrorend == 0:
+                    szansa_trafien_not_tab = (1 / lenend) * 100
                     print(odczyt_tabicy)
-                    print("Dziękujemy za skorzystanie z naszych  usług")
+                    print("Użytkonik nie zajerstrowany! \n Należy skorzystaćc z parkometru", \
+                          "Możesz być 1 z: ", lenend)
                     break
+                elif lentaberrorend > 0:
+                    szansa_trafienia = (lentaberrorend / lenend) * 100
+                    if szansa_trafienia < 80:
+                        print(odczyt_tabicy)
+                        print("Należy skorzystać z parkometru.")
+
+                        break
+                    elif szansa_trafienia > 80 and szansa_trafienia < 90:
+                        print(odczyt_tabicy)
+                        print("Pprawdopodobnie jesteś naszym klinetem")
+                        print("Zaleca się skorzystać z parkometru")
+                        break
+                    else:
+                        print(odczyt_tabicy)
+                        print("Dziękujemy za skorzystanie z naszych  usług")
+                        break
+
+
+
 
 
 
